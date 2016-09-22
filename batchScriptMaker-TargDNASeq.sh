@@ -15,5 +15,5 @@ for s in ${samples}; do
     echo "#SBATCH -t0-12" >> ${sbatch}
     echo "#SBATCH -o '${base}-%j.out'" >> ${sbatch}
     echo "echo 'Processing' ${s}" >> ${sbatch}
-    echo "/fh/fast/paguirigan_a/TargetedDNASeq/FinishedScripts/pipe-TruSight-TargDNA-UnPaired.sh ${s}" >> ${sbatch}
+    echo "/fh/fast/paguirigan_a/GenomicsArchive/TruSightMyeloid/pipe-TruSight-TargDNA-UnPaired-Rclean.sh ${s}" >> ${sbatch}
 done
