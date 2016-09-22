@@ -13,7 +13,7 @@ module load \
 
 
 echo "Set Directory containing fastq's"
-dataDir=fastq/
+dataDir=fastq
  
 ##Declare Common Paths##
 REFDATA=/fh/fast/paguirigan_a/GenomicsArchive
@@ -47,7 +47,7 @@ bwa mem \
     -t 8 -M \
     -R "@RG\tID:${1}\tLB:${1}\tSM:${1}\tPL:ILLUMINA" $BWAHG19 \
     ${dataDir}/${1}.R1.fastq.gz \
-    ${dataDir}${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
+    ${dataDir}/${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
 
 echo "BWA-MEM complete"
 
