@@ -11,10 +11,10 @@ module load \
     BEDTools/2.23.0-foss-2015b \
     GATK/3.5-Java-1.8.0_66 \
     picard/2.0.1-Java-1.8.0_66 \
-    annovar/2016Feb01 \
+    annovar/2016Feb01 
 
 
-dharma_id=SLURM_ARRAY_ID
+dharma_id=SLURM_ARRAY_ID #???
 echo "Set full path to directory containing fastq's"
 dataDir=${2}
 
@@ -90,7 +90,8 @@ ${GATK} -T RealignerTargetCreator \
 	-L $TARGET \
 	-ip 100 \
 	-known $INDEL1000G \
-	-known $INDEL1000GnMill
+	-known $INDEL1000GnMill \
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 
 ${GATK} -T IndelRealigner \
 	-R $HG19FA \
@@ -99,6 +100,7 @@ ${GATK} -T IndelRealigner \
 	-targetIntervals GATK/${1}.realigner.intervals \
 	-known $INDEL1000G \
 	-known $INDEL1000GnMill
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 
 
 echo "Base recalibration"
@@ -110,6 +112,7 @@ ${GATK} -T BaseRecalibrator \
 	-knownSites $INDEL1000G \
 	-knownSites $INDEL1000GnMill \
 	-knownSites $SNP138 \
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 	-o GATK/${1}_recal.grp
 
 ${GATK} -T PrintReads \
