@@ -28,20 +28,11 @@ datatype="DNASeq" #this is specific to the pipeline itself, so it's known.
 #sample prior to analyzing it.  
 
 ---------------------------------------------------------------------------------------------
-#Load specific modules a la pipeline
-GATK
----------------------------------------------------------------------------------------------
-#Process data
-haplotype caller
-
-output file is the vcf?
+#Call Pipeline Script
 
 ---------------------------------------------------------------------------------------------
-# or continue and make output file an annotated variant list?  OR BOTH?!?!?!
+#Upload output file to synapse from Tom, already in github
 
-
----------------------------------------------------------------------------------------------
-#Upload file to synapse from Tom, already in github
 upload.py 
 
 ---------------------------------------------------------------------------------------------

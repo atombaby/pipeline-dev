@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "load modules"
+#### need to adjust this to do the exome analysis!!!!!
 set -e
 ##updated packages on 8/30/2016##
 module load \
@@ -9,16 +9,12 @@ module load \
     BEDTools/2.23.0-foss-2015b \
     GATK/3.5-Java-1.8.0_66 \
     picard/2.0.1-Java-1.8.0_66 \
-    annovar/2016Feb01 
-
-echo "Set full path to directory containing fastq's and initialize vars from arguments"
-filestem=${1}
-dataDir=${2}
-dharma_id=${3}
+    annovar/2016Feb01 \
 
 
-##if running one job from Hutchbase, will need to address the lack of array job call.
 
+echo "Set Directory containing fastq's"
+dataDir=Unaligned/Project_apaguiri
  
 ##Declare Common Paths##
 REFDATA=/fh/fast/paguirigan_a/GenomicsArchive
@@ -40,20 +36,19 @@ INDEL1000G=$BUNDLE/1000G_phase1.indels.hg19.sites.vcf
 INDEL1000GnMill=$BUNDLE/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf
 
 REFORMAT=${REFDATA}/TruSightMyeloid/TruSight-Reformat.R
-UPLOADANNOT=${REFDATA}/REDcapSynapse/uploadannotate.R
 
 
 ##Bed files##
-TARGET=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track.bed
-INTERVAL=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track_interval.bed
+TARGET=/shared/biodata/ngs/AgilentSureSelectv6/S07604514_AllTracks.bed
+
 
 mkdir -p bwa
 echo "Using BWA MEM to map paired-reads to ref genome hg19"
 bwa mem \
     -t 8 -M \
     -R "@RG\tID:${1}\tLB:${1}\tSM:${1}\tPL:ILLUMINA" $BWAHG19 \
-    ${dataDir}/${1}.R1.fastq.gz \
-    ${dataDir}/${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
+    ${dataDir}/Sample_${1}/${1}*_R1_*.fastq.gz \
+    ${dataDir}/Sample_${1}/${1}*_R2_*.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
 
 echo "BWA-MEM complete"
 
@@ -79,8 +74,7 @@ ${GATK} -T RealignerTargetCreator \
 	-L $TARGET \
 	-ip 100 \
 	-known $INDEL1000G \
-	-known $INDEL1000GnMill \
-	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
+	-known $INDEL1000GnMill
 
 ${GATK} -T IndelRealigner \
 	-R $HG19FA \
@@ -89,7 +83,6 @@ ${GATK} -T IndelRealigner \
 	-targetIntervals GATK/${1}.realigner.intervals \
 	-known $INDEL1000G \
 	-known $INDEL1000GnMill
-	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 
 
 echo "Base recalibration"
@@ -101,7 +94,6 @@ ${GATK} -T BaseRecalibrator \
 	-knownSites $INDEL1000G \
 	-knownSites $INDEL1000GnMill \
 	-knownSites $SNP138 \
-	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 	-o GATK/${1}_recal.grp
 
 ${GATK} -T PrintReads \
@@ -169,19 +161,6 @@ perl $ANNOVAR/table_annovar.pl QC/${1}.raw.snps.indels.vcf $ANNOVARDB \
 echo "Clean up format of output files in R"
 Rscript $REFORMAT annovar/${1}.hg19_multianno.txt
 
-echo "Keeping it 100. Files are done"  
-
-Rscript $UPLOADANNOT formattedoutput/${1}.hg19_multianno_clean.tsv ${dharma_id} DNAseq syn7450473
-Rscript $UPLOADANNOT QC/${1}.raw.snps.indels.vcf ${dharma_id} DNAseq syn7450473
-
-
-echo "Go look in synapse my friends. Consider returning the synId of the entity(s) created as a QC check."
-
-
-
-
-
-
-
+echo "Keeping it 100."  
 
 
