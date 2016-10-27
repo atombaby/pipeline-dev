@@ -11,6 +11,7 @@ targetfilename  <- args[1] #path to target file you want to upload
 targetdharma_id <- args[2] 
 targetdata_type <- args[3] #string like "DNAseq" or "RNAseq"
 pipelinefile <- args[4] #synID of pipeline file used
+QCprovfile <- args[5] #path to file used for data QC data provenance/annotation
 
 require(synapseClient)
 require(REDCapR)
@@ -68,3 +69,4 @@ if(targetdata_type=='RNAseq') {
 upfile <- File(targetfilename, parentId=subdir$properties$id)
 synSetAnnotations(upfile)<-as.list(annots)
 upfile <- synStore(upfile, executed=pipelinefile) # sends annotated file up
+#Needs to put up a file of QC data for RNA Seq files from QCprovfile!!!s
