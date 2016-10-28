@@ -16,10 +16,8 @@ QCprovfile <- args[5] #path to file used for data QC data provenance/annotation
 require(synapseClient)
 require(REDCapR)
 
-library(synapseClient)
 synapseLogin('cocoauploader','rambleon!',rememberMe=F)
 
-library(REDCapR)
 results <- redcap_read(redcap_uri = 'https://cdsweb07.fhcrc.org/redcap/api/',
                        token = 'E34D9B9D1C7A2BD1962050BC30A13A9A',
                        records = targetdharma_id,
@@ -47,7 +45,7 @@ if (metadata$redcap_data_access_group == 'paguirigan') {
 } else print('Data Access Group invalid')
 
 #Figure out which subdir to save the data in based on what type of data the file is
-query_results = synQuery('select name from folder where parentId==\"syn7354197\"')
+query_results = synQuery(paste('select name from folder where parentId==\"',parentfolder,'\"'))
 
 if(targetdata_type=='RNAseq') {
     subdir=query_results[query_results$folder.name == 'RNAsequencing',]$folder.id
