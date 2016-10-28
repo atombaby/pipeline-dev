@@ -9,15 +9,13 @@ module load \
     BEDTools/2.23.0-foss-2015b \
     GATK/3.5-Java-1.8.0_66 \
     picard/2.0.1-Java-1.8.0_66 \
-    annovar/2016Feb01 
+    annovar/2016Feb01
+###NEED TO LOAD R TOO?  MULTIPLE MODULE LOAD PROBLEM ONCE YOU ADD IN R!!!
 
 echo "Set full path to directory containing fastq's and initialize vars from arguments"
 filestem=${1}
 dataDir=${2}
 dharma_id=${3}
-
-
-##if running one job from Hutchbase, will need to address the lack of array job call.
 
  
 ##Declare Common Paths##
@@ -169,13 +167,20 @@ perl $ANNOVAR/table_annovar.pl QC/${1}.raw.snps.indels.vcf $ANNOVARDB \
 echo "Clean up format of output files in R"
 Rscript $REFORMAT annovar/${1}.hg19_multianno.txt
 
-echo "Keeping it 100. Files are done"  
-
-Rscript $UPLOADANNOT formattedoutput/${1}.hg19_multianno_clean.tsv ${dharma_id} DNAseq syn7450473
-Rscript $UPLOADANNOT QC/${1}.raw.snps.indels.vcf ${dharma_id} DNAseq syn7450473
+echo "Keeping it 100. Your files have arrived."
 
 
-echo "Go look in synapse my friends. Consider returning the synId of the entity(s) created as a QC check."
+pipeline_id='syn7450473' #for targeted DNA seq, variant calling from TruSight Myeloid seq panel
+
+echo "Putting formatted, annotated files into Synapse with annotations from REDcap"
+Rscript $UPLOADANNOT formattedoutput/${1}.hg19_multianno_clean.tsv ${dharma_id} DNAseq ${pipeline_id}
+
+
+echo "Putting unannotated vcf's into Synapse with annotations from REDcap for more raw versions of these data."
+Rscript $UPLOADANNOT QC/${1}.raw.snps.indels.vcf ${dharma_id} DNAseq ${pipeline_id}
+
+
+echo "Go look in synapse my friends. Consider returning the synId of the entity(s) created as a QC check?"
 
 
 
