@@ -10,7 +10,7 @@ means I can only process the files in that directory as a group!!
 ##Generate individual batch scripts
 C/P in the sample names (file stems) from above into the text of the
 batchScriptMaker-TargDNASeq.sh.  It makes one script per sample that looks like
-t1.sbatch.  It refers to database references in various lcoations both private 
+t1.sbatch.  It refers to database references in various locations both private 
 to me and shared to all, which means only my user can submit these jobs now.  :(
 The script it calls is: pipe-XXX-TargDNA-Unpaired-Rclean.sh, and a formatting
 script I wrote in R b/c I could (but is not rocket science) called
@@ -54,7 +54,7 @@ So this would replace the batchscriptmaker and the sbatch t*batch step.
 Ideally it would be run somewhere central, but 
 would look for the various data files in the directories specified, assuming it 
 had the permissions for them.  That way you could run the same analysis on files 
-in aritrary directories assuming the user who ran the script had permissions for
+in arbitrary directories assuming the user who ran the script had permissions for
 all of them. When things were made via Hutchbase, this is less of an issue, but
 all incoming data from elsewhere or any older data set would need to be run 
 through a pipeline such as this.  ALSO, if we ever wanted to keep using legacy 
