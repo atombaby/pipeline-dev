@@ -3,7 +3,7 @@
 #Current approach:
 
 ##List of file stems (old skool version that works)
-I save the column of the above csv containing the sample names (file stems) as 
+I save the list of file stems as a
 text file in the directory containing the fastq's (the project folder).  This
 means I can only process the files in that directory as a group!!  
 
