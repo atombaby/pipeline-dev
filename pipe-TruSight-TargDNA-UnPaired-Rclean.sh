@@ -1,6 +1,29 @@
 #!/bin/bash
 
+# pipe-TruSight-TargDNA-UnPaired-Rclean.sh <path to report>
+
 set -e
+
+# Check for slurm array job
+
+if [ -z ${SLURM_ARRAY_TASK_ID+x} ]
+then
+        echo "SLURM_ARRAY_TASK_ID is unset- are we in a job?" >&2
+        exit 1
+fi
+
+# Check for existence of the RedCap report with dharma id's for samples
+
+if [ -r ${1} ]
+then
+        AWKSTRING="\$3 == \"$SLURM_ARRAY_TASK_ID\" {print \$2}"
+        TGT=$(awk -F',' "$AWKSTRING" ${1})
+        echo "Working on source file ${TGT}"
+else
+        echo "Sample database (${1}) does not exist or is unreadable" >&2
+        exit 1
+fi
+
 ##updated packages on 8/30/2016##
 module load \
     BWA/0.7.12-foss-2015b \
