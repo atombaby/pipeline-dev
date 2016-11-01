@@ -16,9 +16,9 @@ fi
 
 if [ -r ${1} ]
 then
-        AWKSTRING="\$3 == \"$SLURM_ARRAY_TASK_ID\" {print \$2}"
-        TGT=$(awk -F',' "$AWKSTRING" ${1})
-        echo "Working on source file ${TGT}"
+        AWKSTRING="\$3 == \"$SLURM_ARRAY_TASK_ID\" {print \$1,\$2}"
+        TGT=($(awk -F',' "$AWKSTRING" ${1}))
+        echo "Working on source file ${TGT[0]} in ${TGT[1]}"
 else
         echo "Sample database (${1}) does not exist or is unreadable" >&2
         exit 1
