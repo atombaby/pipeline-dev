@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "load modules"
 set -e
 ##updated packages on 8/30/2016##
 module load \
@@ -8,12 +9,14 @@ module load \
     BEDTools/2.23.0-foss-2015b \
     GATK/3.5-Java-1.8.0_66 \
     picard/2.0.1-Java-1.8.0_66 \
-    annovar/2016Feb01 \
+    annovar/2016Feb01
+###NEED TO LOAD R TOO?  MULTIPLE MODULE LOAD PROBLEM ONCE YOU ADD IN R!!!
 
+echo "Set full path to directory containing fastq's and initialize vars from arguments"
+filestem=${1}
+dataDir=${2}
+dharma_id=${3}
 
-
-echo "Set Directory containing fastq's"
-dataDir=fastq/
  
 ##Declare Common Paths##
 REFDATA=/fh/fast/paguirigan_a/GenomicsArchive
@@ -34,11 +37,13 @@ SNP138=$BUNDLE/dbsnp_138.hg19.vcf
 INDEL1000G=$BUNDLE/1000G_phase1.indels.hg19.sites.vcf
 INDEL1000GnMill=$BUNDLE/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf
 
-REFORMAT=${REFDATA}/WashUTarg/WashU-targ-Reformat.R
+REFORMAT=${REFDATA}/TruSightMyeloid/TruSight-Reformat.R
+UPLOADANNOT=${REFDATA}/REDcapSynapse/uploadannotate.R
 
 
 ##Bed files##
-TARGET=${REFDATA}/WashUTarg/WASHU_target_file_formatted.bed
+TARGET=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track.bed
+INTERVAL=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track_interval.bed
 
 mkdir -p bwa
 echo "Using BWA MEM to map paired-reads to ref genome hg19"
@@ -46,7 +51,7 @@ bwa mem \
     -t 8 -M \
     -R "@RG\tID:${1}\tLB:${1}\tSM:${1}\tPL:ILLUMINA" $BWAHG19 \
     ${dataDir}/${1}.R1.fastq.gz \
-    ${dataDir}${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
+    ${dataDir}/${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
 
 echo "BWA-MEM complete"
 
@@ -72,7 +77,8 @@ ${GATK} -T RealignerTargetCreator \
 	-L $TARGET \
 	-ip 100 \
 	-known $INDEL1000G \
-	-known $INDEL1000GnMill
+	-known $INDEL1000GnMill \
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 
 ${GATK} -T IndelRealigner \
 	-R $HG19FA \
@@ -81,6 +87,7 @@ ${GATK} -T IndelRealigner \
 	-targetIntervals GATK/${1}.realigner.intervals \
 	-known $INDEL1000G \
 	-known $INDEL1000GnMill
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 
 
 echo "Base recalibration"
@@ -92,6 +99,7 @@ ${GATK} -T BaseRecalibrator \
 	-knownSites $INDEL1000G \
 	-knownSites $INDEL1000GnMill \
 	-knownSites $SNP138 \
+	--disable_auto_index_creation_and_locking_when_reading_rods #NOT SURE IF THIS WORKS YET TO DEAL WITH TIMEOUT PROBLEM
 	-o GATK/${1}_recal.grp
 
 ${GATK} -T PrintReads \
@@ -159,6 +167,26 @@ perl $ANNOVAR/table_annovar.pl QC/${1}.raw.snps.indels.vcf $ANNOVARDB \
 echo "Clean up format of output files in R"
 Rscript $REFORMAT annovar/${1}.hg19_multianno.txt
 
-echo "Keeping it 100."  
+echo "Keeping it 100. Your files have arrived."
+
+
+pipeline_id='syn7450473' #for targeted DNA seq, variant calling from TruSight Myeloid seq panel
+
+echo "Putting formatted, annotated files into Synapse with annotations from REDcap"
+Rscript $UPLOADANNOT formattedoutput/${1}.hg19_multianno_clean.tsv ${dharma_id} DNAseq ${pipeline_id}
+
+
+echo "Putting unannotated vcf's into Synapse with annotations from REDcap for more raw versions of these data."
+Rscript $UPLOADANNOT QC/${1}.raw.snps.indels.vcf ${dharma_id} DNAseq ${pipeline_id}
+
+
+echo "Go look in synapse my friends. Consider returning the synId of the entity(s) created as a QC check?"
+
+
+
+
+
+
+
 
 
