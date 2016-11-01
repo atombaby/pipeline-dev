@@ -45,22 +45,22 @@ mkdir -p bwa
 echo "Using BWA MEM to map paired-reads to ref genome hg19"
 bwa mem \
     -t 8 -M \
-    -R "@RG\tID:${1}\tLB:${1}\tSM:${1}\tPL:ILLUMINA" $BWAHG19 \
-    ${dataDir}/${1}.R1.fastq.gz \
-    ${dataDir}/${1}.R2.fastq.gz > bwa/${1}.sam 2> bwa/${1}_aln.err
+    -R "@RG\tID:${TGT}\tLB:${TGT}\tSM:${TGT}\tPL:ILLUMINA" $BWAHG19 \
+    ${dataDir}/${TGT}.R1.fastq.gz \
+    ${dataDir}/${TGT}.R2.fastq.gz > bwa/${TGT}.sam 2> bwa/${TGT}_aln.err
 
 echo "BWA-MEM complete"
 
 mkdir -p picard
 echo "clean and sort sam/bam, mark duplicate reads, and index"
 ${PICARD} \
-	I=bwa/${1}.sam \
-	O=picard/${1}.bam \
+	I=bwa/${TGT}.sam \
+	O=picard/${TGT}.bam \
 	VALIDATION_STRINGENCY=LENIENT \
 	TMP_DIR=$PWD/tmp \
 	SO=coordinate
 
-samtools index picard/${1}.bam
+samtools index picard/${TGT}.bam
 
 echo "Picard and samtools indexing complete"
 
@@ -68,8 +68,8 @@ mkdir -p GATK
 echo "Realign, then index"
 ${GATK} -T RealignerTargetCreator \
 	-R $HG19FA \
-	-I picard/${1}.bam \
-	-o GATK/${1}.realigner.intervals \
+	-I picard/${TGT}.bam \
+	-o GATK/${TGT}.realigner.intervals \
 	-L $TARGET \
 	-ip 100 \
 	-known $INDEL1000G \
@@ -77,9 +77,9 @@ ${GATK} -T RealignerTargetCreator \
 
 ${GATK} -T IndelRealigner \
 	-R $HG19FA \
-	-I picard/${1}.bam \
-	-o GATK/${1}.realigned.bam \
-	-targetIntervals GATK/${1}.realigner.intervals \
+	-I picard/${TGT}.bam \
+	-o GATK/${TGT}.realigned.bam \
+	-targetIntervals GATK/${TGT}.realigner.intervals \
 	-known $INDEL1000G \
 	-known $INDEL1000GnMill
 
@@ -87,58 +87,58 @@ ${GATK} -T IndelRealigner \
 echo "Base recalibration"
 ${GATK} -T BaseRecalibrator \
 	-R $HG19FA \
-	-I GATK/${1}.realigned.bam \
+	-I GATK/${TGT}.realigned.bam \
 	-L $TARGET \
 	-ip 100 \
 	-knownSites $INDEL1000G \
 	-knownSites $INDEL1000GnMill \
 	-knownSites $SNP138 \
-	-o GATK/${1}_recal.grp
+	-o GATK/${TGT}_recal.grp
 
 ${GATK} -T PrintReads \
 	-R $HG19FA \
-	-I GATK/${1}.realigned.bam \
+	-I GATK/${TGT}.realigned.bam \
 	-L $TARGET \
 	-ip 100 \
-	-BQSR GATK/${1}_recal.grp \
-	-o GATK/${1}.realigned.recal.bam
+	-BQSR GATK/${TGT}_recal.grp \
+	-o GATK/${TGT}.realigned.recal.bam
 
 echo "GATK realignment, recalibration complete"
 
 mkdir -p QC
 echo "Diagnostics and Quality Control"
 echo "Generate overview"
-samtools flagstat picard/${1}.bam > picard/${1}.flagstat.out
+samtools flagstat picard/${TGT}.bam > picard/${TGT}.flagstat.out
 
 echo "Compute Number Of Reads  Bed File, Default minimum overlap is 1 bp"
-intersectBed -v -wa -abam picard/${1}.bam -b $TARGET -bed | wc -l > QC/${1}.intersectBed.out
+intersectBed -v -wa -abam picard/${TGT}.bam -b $TARGET -bed | wc -l > QC/${TGT}.intersectBed.out
 
 echo "Compute Read Depths"
 ${GATK} -T DepthOfCoverage \
 	-R $HG19FA \
-	-I GATK/${1}.realigned.recal.bam \
+	-I GATK/${TGT}.realigned.recal.bam \
 	-L $TARGET \
 	-omitBaseOutput \
 	-omitLocusTable \
 	-S SILENT \
 	-ct 10 -ct 15 -ct 20 \
-	-o QC/${1}.depth
+	-o QC/${TGT}.depth
 
 echo "Variant calling using HaplotypeCaller"
 ${GATK} -T HaplotypeCaller \
 	-R $HG19FA \
-	-I GATK/${1}.realigned.recal.bam \
+	-I GATK/${TGT}.realigned.recal.bam \
 	-L $TARGET \
 	--dbsnp $SNP138 \
 	-stand_call_conf 30 \
 	-stand_emit_conf 10 \
-	-o QC/${1}.raw.snps.indels.vcf
+	-o QC/${TGT}.raw.snps.indels.vcf
 
 echo "QC, Depth of coverage and variant calling complete"
 
 echo "Clean up files"
-if [ -f $PWD/${1}.depth.sample_summary ]; then 
-    rm bwa/${1}.sam
+if [ -f $PWD/${TGT}.depth.sample_summary ]; then 
+    rm bwa/${TGT}.sam
 fi
 
 
@@ -149,16 +149,16 @@ ANOVAR_PROTOCOLS="${ANOVAR_PROTOCOLS},1000g2015aug_afr,1000g2015aug_eas,1000g201
 
 mkdir -p annovar
 
-perl $ANNOVAR/table_annovar.pl QC/${1}.raw.snps.indels.vcf $ANNOVARDB \
+perl $ANNOVAR/table_annovar.pl QC/${TGT}.raw.snps.indels.vcf $ANNOVARDB \
     -buildver hg19 \
-    -out annovar/${1} \
+    -out annovar/${TGT} \
     -remove \
     -protocol ${ANOVAR_PROTOCOLS} \
     -operation g,f,f,f,f,f,f,f,f,f,f \
     -nastring . -vcfinput
 
 echo "Clean up format of output files in R"
-Rscript $REFORMAT annovar/${1}.hg19_multianno.txt
+Rscript $REFORMAT annovar/${TGT}.hg19_multianno.txt
 
 echo "Keeping it 100."  
 
