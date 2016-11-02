@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import re
 from itertools import groupby
 from operator import itemgetter
 
@@ -15,9 +16,7 @@ def format_for_sbatch( l ):
     # take a list of grouped numbers and format for `sbatch -a <>`
     # [[1],[3,4,5,6],[9,10],[12]]
     out = []
-    print(l)
     for g in l:
-        print(g)
         if g[0] == g[-1]:
             out.append(str(g[0]))
         else:
@@ -26,7 +25,10 @@ def format_for_sbatch( l ):
     return ','.join(out)
 
 if __name__ == "__main__":
-    numbers = sys.argv[1].split(',')
+    numbers = []
+    for arg in sys.argv[1:]:
+        numbers = numbers + re.split( ' |,', arg)
+    print(numbers)
     try:
         numbers = [ int(n) for n in numbers ]
     except ValueError:
