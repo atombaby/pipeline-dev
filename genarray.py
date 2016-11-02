@@ -2,8 +2,11 @@
 
 import sys
 import re
+import csv
+
 from itertools import groupby
 from operator import itemgetter
+from argparse import ArgumentParser
 
 def group_index( l ):
     # for list of ints in `l`, return list of grouped indexes
@@ -25,16 +28,29 @@ def format_for_sbatch( l ):
     return ','.join(out)
 
 if __name__ == "__main__":
-    numbers = []
-    for arg in sys.argv[1:]:
-        numbers = numbers + re.split( ' |,', arg)
-    try:
-        numbers = [ int(n) for n in numbers ]
-    except ValueError:
-        print("ERROR: non-integer found in your list of numbers")
-        sys.exit(1)
+    parser = ArgumentParser()
+    parser.add_argument( "-r", "--report", dest="report",
+                        required=True,
+                        help="path to redcap report" )
+    parser.add_argument( "-s", "--script", dest="script",
+                        required=True,
+                        help="path to pipeline script" )
+    parser.add_argument( "-o", "--slurm-opts", dest="slurm_opts",
+                      action="append",
+                      help="slurm options to add to job submission" )
+    
+    args = parser.parse_args()
+    print(args.slurm_opts)
 
-    numbers = sorted( numbers )
-    a = group_index( numbers )
-    print(format_for_sbatch( a ))
+    dharma_ids = []
+    with open( args.report ) as report:
+        report_reader = csv.DictReader( report )
+        for line in report_reader:
+            dharma_ids.append(int(line['dharma_id']))
+
+    print(dharma_ids)
+
+    job_array_indexes = format_for_sbatch( group_index( dharma_ids ))
+    slurm_opts = ' '.join(args.slurm_opts)
+    print("sbatch -a {} {} --wrap=\"{}\"".format(job_array_indexes, slurm_opts, args.script))
 
