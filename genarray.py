@@ -28,7 +28,6 @@ if __name__ == "__main__":
     numbers = []
     for arg in sys.argv[1:]:
         numbers = numbers + re.split( ' |,', arg)
-    print(numbers)
     try:
         numbers = [ int(n) for n in numbers ]
     except ValueError:
