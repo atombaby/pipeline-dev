@@ -16,9 +16,11 @@ fi
 
 if [ -r ${1} ]
 then
-        AWKSTRING="\$3 == \"$SLURM_ARRAY_TASK_ID\" {print \$2}"
-        TGT=$(awk -F',' "$AWKSTRING" ${1})
-        echo "Working on source file ${TGT}"
+        AWKSTRING="\$3 == \"$SLURM_ARRAY_TASK_ID\" {print \$1,\$2}"
+        TGT=($(awk -F',' "$AWKSTRING" ${1}))
+        root=${TGT[0]}
+        parent=$(dirname ${TGT[1]})
+        echo "Working on source files $root in $parent"
 else
         echo "Sample database (${1}) does not exist or is unreadable" >&2
         exit 1
@@ -31,9 +33,7 @@ module load \
     BEDTools/2.23.0-foss-2015b \
     GATK/3.5-Java-1.8.0_66 \
     picard/2.0.1-Java-1.8.0_66 \
-    annovar/2016Feb01 \
-
-
+    annovar/2016Feb01
 
 echo "Set Directory containing fastq's"
 dataDir=fastq
@@ -64,6 +64,7 @@ REFORMAT=${REFDATA}/TruSightMyeloid/TruSight-Reformat.R
 TARGET=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track.bed
 INTERVAL=${REFDATA}/TruSightMyeloid/trusight-myeloid-amplicon-track_interval.bed
 
+cd $parent
 mkdir -p bwa
 echo "Using BWA MEM to map paired-reads to ref genome hg19"
 bwa mem \
