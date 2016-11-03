@@ -3,10 +3,27 @@
 import sys
 import re
 import csv
+import subprocess
 
 from itertools import groupby
 from operator import itemgetter
 from argparse import ArgumentParser
+
+def flatten(l, ltypes=(list, tuple)):
+    # from http://basicproperty.sourceforge.net/
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
 
 def group_index( l ):
     # for list of ints in `l`, return list of grouped indexes
@@ -40,7 +57,6 @@ if __name__ == "__main__":
                       help="slurm options to add to job submission" )
     
     args = parser.parse_args()
-    print(args.slurm_opts)
 
     dharma_ids = []
     with open( args.report ) as report:
@@ -48,9 +64,20 @@ if __name__ == "__main__":
         for line in report_reader:
             dharma_ids.append(int(line['dharma_id']))
 
-    print(dharma_ids)
-
     job_array_indexes = format_for_sbatch( group_index( dharma_ids ))
-    slurm_opts = ' '.join(args.slurm_opts)
-    print("sbatch -a {} {} --wrap=\"{}\"".format(job_array_indexes, slurm_opts, args.script))
+    wrap_script = "{} {}".format( args.script, args.report )
 
+    # Slurm options need to be split for use in subprocess
+    slurm_opts = [ optarg.split() for optarg in args.slurm_opts ]
+    slurm_opts = flatten( slurm_opts )
+
+    cmd = [
+        'sbatch',
+        '-a',
+        job_array_indexes
+    ] + slurm_opts + ['--wrap', wrap_script ]
+
+    # execute the command
+    print( ' '.join(cmd) )
+    result = subprocess.check_output( cmd )
+    print(result)
